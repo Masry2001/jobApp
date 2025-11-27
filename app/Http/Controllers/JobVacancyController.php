@@ -24,11 +24,28 @@ class JobVacancyController extends Controller
 
     public function show(JobVacancy $jobVacancy)
     {
+        $sessionKey = 'job_viewed_' . $jobVacancy->id;
+
+        if (!session()->has($sessionKey)) {
+            $jobVacancy->increment('viewCount');
+            session()->put($sessionKey, true);
+        }
         return view('job-vacancies.show', compact('jobVacancy'));
     }
 
     public function apply(JobVacancy $jobVacancy)
     {
+
+        // Check if the user has already applied for this job
+        if (
+            JobApplication::where('jobVacancyId', $jobVacancy->id)
+                ->where('userId', auth()->id())
+                ->exists()
+        ) {
+            return redirect()->route('job-vacancies.show', $jobVacancy)
+                ->with('error', 'You have already applied for this job.');
+        }
+
         // Get user's existing resumes
         $resumes = Resume::where('userId', auth()->id())
             ->latest()
