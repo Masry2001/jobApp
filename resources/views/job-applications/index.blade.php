@@ -5,15 +5,7 @@
     </h2>
   </x-slot>
 
-  @php
-    function getSupabasePublicUrl(string $path): string
-    {
-      $projectUrl = env('PROJECT_URL');
-      $bucketName = env('SUPABASE_BUCKET');
 
-      return "{$projectUrl}/storage/v1/object/public/{$bucketName}/{$path}";
-    }
-  @endphp
 
   <div class="py-8 sm:py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -82,7 +74,7 @@
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Applied with: <span class="text-blue-400">{{ $jobApplication->resume->fileName }}</span></span>
-                    <a href="{{ getSupabasePublicUrl($jobApplication->resume->fileUri) }}" target="_blank"
+                    <a href="{{ $jobApplication->resume->publicUrl}}" target="_blank"
                       class="text-blue-500 hover:text-blue-400 transition-colors ml-2 flex items-center gap-1">
                       View
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,11 +91,11 @@
                   <div class="flex items-center gap-2">
                     @php
                       $statusColors = [
-                        'pending' => 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-                        'accepted' => 'bg-green-500/20 text-green-400 border-green-500/30',
-                        'rejected' => 'bg-red-500/20 text-red-400 border-red-500/30',
+                        'Pending' => 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+                        'Accepted' => 'bg-green-500/20 text-green-400 border-green-500/30',
+                        'Rejected' => 'bg-red-500/20 text-red-400 border-red-500/30',
                       ];
-                      $statusColor = $statusColors[$jobApplication->status] ?? $statusColors['pending'];
+                      $statusColor = $statusColors[$jobApplication->status] ?? $statusColors['Pending'];
                     @endphp
                     <span
                       class="flex-1 px-3 py-1.5 {{ $statusColor }} border rounded-full text-xs font-semibold text-center uppercase">

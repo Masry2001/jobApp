@@ -54,18 +54,7 @@ class JobVacancyController extends Controller
         return view('job-vacancies.apply', compact('jobVacancy', 'resumes'));
     }
 
-    /*************  ✨ Windsurf Command ⭐  *************/
-    /**
-     * Process a job application submission.
-     *
-     * @param ApplyJobRequest $request
-     * @param JobVacancy $jobVacancy
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     *
-     * @throws \Exception
-     */
-    /*******  e2402925-4648-415c-baeb-a98d8eb452cb  *******/
+
     public function processApplication(
         ApplyJobRequest $request,
         JobVacancy $jobVacancy
