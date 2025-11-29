@@ -1,26 +1,23 @@
 {
     # Enable FrankenPHP
     frankenphp
-    # Disable admin API for security
-    admin off
 }
 
-# Listen on PORT environment variable (Railway will set this)
-:{$PORT:8080} {
+# The domain name of your server
+:80, :443 {
     # Set the webroot to the public/ directory
     root * public/
     
     # Enable compression
-    encode zstd gzip
+    encode zstd br gzip
     
-    # Handle PHP files with FrankenPHP
+    # Handle PHP files
     php_server
-    
-    # File server for static assets
-    file_server
-    
+
     # Security headers
     header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         # Prevent MIME type sniffing
         X-Content-Type-Options "nosniff"
         # Prevent clickjacking
@@ -29,29 +26,17 @@
         X-XSS-Protection "1; mode=block"
         # Referrer policy
         Referrer-Policy "strict-origin-when-cross-origin"
+        # Content security policy
+        Content-Security-Policy "upgrade-insecure-requests"
     }
-    
-    # Serve static files with caching
+
+    # Serve static files with proper headers
     @static {
         file
-        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot *.webp
+        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot
     }
     header @static {
-        Cache-Control "public, max-age=31536000, immutable"
+        Cache-Control "public, max-age=31536000"
+        X-Content-Type-Options "nosniff"
     }
-    
-    # Health check endpoint
-    handle /health {
-        respond "OK" 200
-    }
-    
-    # Laravel index.php fallback
-    try_files {path} {path}/ /index.php?{query}
-    
-    # Logging
-    log {
-        output stdout
-        format console
-        level INFO
-    }
-}
+} 
