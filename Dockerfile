@@ -90,9 +90,7 @@ set -e\n\
 echo "Running migrations..."\n\
 php artisan migrate --force\n\
 \n\
-echo "Seeding database..."\n\
-php artisan db:seed --force\n\
-\n\
+
 echo "Optimizing Laravel..."\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
