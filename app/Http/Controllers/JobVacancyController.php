@@ -88,7 +88,7 @@ class JobVacancyController extends Controller
                 $originalFileName = $resumeFile->getClientOriginalName();
                 $filename = Str::uuid() . '_' . time() . '.pdf';
 
-                // Upload to Supabase
+                // Upload to Supabase (store in Supabase)
                 $path = Storage::disk('supabase')->putFileAs(
                     'resumes',
                     $resumeFile,
@@ -111,10 +111,10 @@ class JobVacancyController extends Controller
                         'name' => auth()->user()->name,
                         'email' => auth()->user()->email,
                     ]),
-                    'summary' => $extractedResumeInfo['summary'],
-                    'skills' => $extractedResumeInfo['skills'],
-                    'experience' => $extractedResumeInfo['experience'],
-                    'education' => $extractedResumeInfo['education'],
+                    'summary' => json_encode($extractedResumeInfo['summary']),
+                    'skills' => json_encode($extractedResumeInfo['skills']),
+                    'experience' => json_encode($extractedResumeInfo['experience']),
+                    'education' => json_encode($extractedResumeInfo['education']),
                 ]);
 
                 $resumeId = $resume->id;

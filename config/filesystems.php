@@ -60,21 +60,6 @@ return [
             'report' => false,
         ],
 
-        'google' => [
-            'driver' => 'google',
-            'service_account' => env('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON'),
-            'folder_id' => env('GOOGLE_DRIVE_FOLDER_ID'),
-        ],
-
-        'cloudinary' => [
-            'driver' => 'cloudinary',
-            'cloud' => env('CLOUDINARY_CLOUD_NAME'),
-            'key' => env('CLOUDINARY_API_KEY'),
-            'secret' => env('CLOUDINARY_API_SECRET'),
-            'secure' => true,
-            'prefix' => null,
-        ],
-
         'supabase' => [
             'driver' => 's3',
             'key' => env('SUPABASE_ACCESS_KEY_ID'),
