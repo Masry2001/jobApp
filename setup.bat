@@ -20,7 +20,7 @@ if errorlevel 1 (
     echo The job-app requires the job-backoffice database to be running.
     echo Please setup and start job-backoffice first:
     echo.
-    echo    1. Clone job-backoffice repository
+    echo    1. Clone job-backoffice repository "git clone https://github.com/Masry2001/jobBackoffice.git"
     echo    2. Run: setup.bat in job-backoffice folder
     echo    3. Wait for it to complete
     echo    4. Then come back and run this script again
