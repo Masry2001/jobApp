@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "google-gemini-php/laravel": "^2.0",
         "job/shared": "*",
         "laravel/framework": "^12.0",
