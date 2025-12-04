@@ -1,67 +1,41 @@
-# Use the official FrankenPHP image
-FROM dunglas/frankenphp
+FROM php:8.2-cli
 
-# Install system dependencies
+# Install system dependencies including poppler-utils for PDF text extraction
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libzip-dev \
     zip \
     unzip \
+    nodejs \
+    npm \
     poppler-utils \
-    default-mysql-client \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
+# Verify poppler-utils installation
+RUN pdftotext -v
 
 # Install PHP extensions
-RUN install-php-extensions \
-    pdo_mysql \
-    mysqli
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
-WORKDIR /app
+WORKDIR /var/www
 
-# Copy composer files
-COPY composer.json composer.lock ./
-
-# Install Composer dependencies
-RUN composer install --no-scripts --no-autoloader
-
-# Copy package files
-COPY package.json package-lock.json ./
-
-# Install Node.js dependencies
-RUN npm install
-
-# Copy the rest of the application
+# Copy application files
 COPY . .
 
-# Copy PHP configuration
-COPY php.ini /usr/local/etc/php/conf.d/custom.ini
+# Set permissions for Laravel
+RUN mkdir -p storage/framework/{sessions,views,cache} \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
 
-# Generate autoload files
-RUN composer dump-autoload --optimize
-
-# Build frontend assets
-RUN npm run build
-
-# Set permissions
-RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
-
-# Copy Caddyfile
-COPY Caddyfile /etc/caddy/Caddyfile
-
-# Expose ports
-EXPOSE 80
-EXPOSE 443
-
-# Start FrankenPHP
-CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"] 
+EXPOSE 8001 5174

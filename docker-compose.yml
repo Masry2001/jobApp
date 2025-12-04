@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Job App Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: job-app
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+    ports:
+      - '8001:8001'
+      - '5174:5174'
+    environment:
+      DB_CONNECTION: mariadb
+      DB_HOST: host.docker.internal
+      DB_PORT: 3306
+      DB_DATABASE: jobboard_db
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SUPABASE_ACCESS_KEY_ID: ${SUPABASE_ACCESS_KEY_ID}
+      SUPABASE_SECRET_ACCESS_KEY: ${SUPABASE_SECRET_ACCESS_KEY}
+      SUPABASE_REGION: ${SUPABASE_REGION}
+      SUPABASE_BUCKET: ${SUPABASE_BUCKET}
+      SUPABASE_ENDPOINT: ${SUPABASE_ENDPOINT}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - jobboard-network
+    command: >
+      sh -c "
+        echo '⏳ Installing Composer dependencies...' &&
+        composer install --no-interaction --prefer-dist --optimize-autoloader &&
+        
+        echo '⏳ Installing NPM dependencies...' &&
+        npm install &&
+        
+        echo '⏳ Setting up environment...' &&
+        php artisan key:generate --force &&
+        
+        echo '✅ Setup complete!' &&
+        echo '🚀 Starting Laravel server...' &&
+        php artisan serve --host=0.0.0.0 --port=8001 &
+        
+        echo '🎨 Starting Vite dev server...' &&
+        npm run dev -- --host --port 5174
+      "
+
+networks:
+  jobboard-network:
+    external: true
+    name: jobboard-network
