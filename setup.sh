@@ -24,10 +24,11 @@ if ! docker network inspect jobboard-network &> /dev/null; then
     echo "⚠️  The job-app requires the job-backoffice database to be running."
     echo "   Please setup and start job-backoffice first:"
     echo ""
-    echo "   1. Clone job-backoffice repository"
-    echo "   2. Run: cd job-backoffice && ./setup.sh"
-    echo "   3. Wait for it to complete"
-    echo "   4. Then come back and run this script again"
+    echo "   1. Open a new terminal"
+    echo "   2. cd ~/webDev/testDocker/jobBackoffice"
+    echo "   3. Run: ./setup.sh"
+    echo "   4. Wait for it to complete"
+    echo "   5. Then come back and run this script again"
     echo ""
     exit 1
 fi
@@ -41,6 +42,12 @@ if [ ! -f .env ]; then
     cp .env.example .env
 else
     echo "✓ .env file already exists"
+fi
+
+# Remove vendor if it exists (permission issues)
+if [ -d "vendor" ]; then
+    echo "🧹 Removing existing vendor folder..."
+    sudo rm -rf vendor
 fi
 
 # Stop and remove existing containers (if any)
@@ -74,7 +81,11 @@ echo "   ☁️  Supabase Storage: Connected"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "💡 Useful Commands:"
-echo "   📋 View logs: docker-compose logs -f app"
+echo "   📋 View logs: docker logs job-app -f"
 echo "   🔄 Restart: docker-compose restart"
 echo "   🛑 Stop: docker-compose down"
+echo ""
+echo "🔗 Connected Services:"
+echo "   Database: jobboard_db (shared with job-backoffice)"
+echo "   phpMyAdmin: http://localhost:8081"
 echo ""

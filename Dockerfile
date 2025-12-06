@@ -28,14 +28,12 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy application files
-COPY . .
+# Fix Git ownership issue
+RUN git config --global --add safe.directory /var/www
 
-# Set permissions for Laravel
+# Create Laravel directories
 RUN mkdir -p storage/framework/{sessions,views,cache} \
     && mkdir -p storage/logs \
-    && mkdir -p bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && mkdir -p bootstrap/cache
 
 EXPOSE 8001 5174
