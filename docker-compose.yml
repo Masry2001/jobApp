@@ -36,7 +36,8 @@ services:
     networks:
       - jobboard-network
     entrypoint: /bin/bash
-    command:
+
+command:
       - -c
       - |
         set -e
@@ -44,7 +45,7 @@ services:
         sleep 2
         
         echo '🔍 Checking if job-backoffice database is accessible...'
-        until nc -z db 3306; do
+        until php -r "new PDO('mysql:host=db;port=3306', 'root', '');" 2>/dev/null; do
           echo '⏳ Waiting for database...'
           sleep 2
         done
