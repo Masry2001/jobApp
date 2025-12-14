@@ -47,7 +47,7 @@ class ResumeAnalysisService
       $resumeDataJson = json_encode($resumeData);
 
       // Send to gemini
-      $result = Gemini::generativeModel(model: 'gemini-2.0-flash')
+      $result = Gemini::generativeModel(model: 'gemini-2.5-flash')
         ->withSystemInstruction(
           Content::parse('You are an expert HR professional and job recruiter. You are given a job vacancy and a resume. Your task is to analyze and determine if the candidate is a good fit for the job. Provide a score from 0 to 100 for the candidate suitability for the job and detailed feedback.')
         )
@@ -163,7 +163,7 @@ class ResumeAnalysisService
   private function extractResumeInformationUsingGemini(string $text)
   {
     try {
-      $result = Gemini::generativeModel(model: 'gemini-2.0-flash')
+      $result = Gemini::generativeModel(model: 'gemini-2.5-flash')
         ->withSystemInstruction(
           Content::parse('You are a precision resume analyzer. Your job is to analyze a resume and extract information exactly as it appears in the resume without adding any additional information.')
         )

@@ -68,8 +68,12 @@
           </p>
         </div>
 
-        <form action="{{ route('job-vacancies.processApplication', $jobVacancy) }}" method="POST"
-          enctype="multipart/form-data" class="space-y-6" x-data="resumeUpload()">
+        <form action="{{ route('job-vacancies.processApplication', $jobVacancy) }}" 
+              method="POST"
+              enctype="multipart/form-data" 
+              class="space-y-6" 
+              x-data="resumeUpload()"
+              @submit.prevent="handleSubmit($event)">
           @csrf
 
           <!-- Hidden inputs for resume selection -->
@@ -245,12 +249,24 @@
 
           <!-- Submit Button -->
           <div class="pt-4">
-            <x-primary-button type="submit" class="w-full text-base py-4">
-              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <x-primary-button 
+              type="submit" 
+              class="w-full text-base py-4"
+              x-bind:disabled="isSubmitting">
+              
+              <!-- Loading Spinner (shown when submitting) -->
+              <svg x-show="isSubmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              
+              <!-- Check Icon (shown when not submitting) -->
+              <svg x-show="!isSubmitting" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Submit Application
+              
+              <span x-text="isSubmitting ? 'Submitting Application...' : 'Submit Application'"></span>
             </x-primary-button>
           </div>
         </form>
@@ -270,11 +286,27 @@
       hasError: false,
       errorMessage: '',
       resumeOption: '',
-      selectedResumeId: null, // ← Important: null, not empty string
+      selectedResumeId: null,
+      isSubmitting: false,
 
       // Constants
       MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
       ALLOWED_FILE_TYPE: 'application/pdf',
+
+      // Form Submit Handler
+      handleSubmit(event) {
+        // Validate that user has selected either existing resume or uploaded new one
+        if (!this.selectedResumeId && !this.fileName) {
+          this.setError('Please select an existing resume or upload a new one');
+          return; // Stop form submission
+        }
+
+        // Set submitting state to disable button
+        this.isSubmitting = true;
+        
+        // Submit the form
+        event.target.submit();
+      },
 
       // Select Existing Resume
       selectExistingResume(resumeId) {
