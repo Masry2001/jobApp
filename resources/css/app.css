@@ -5,6 +5,27 @@
 /* Custom Scrollbar Styles */
 @layer base {
 
+  /* =======================
+     Text Selection Styles
+     ======================= */
+
+  ::selection {
+    background-color: rgb(59 130 246);
+    ;
+    /* blue-500 */
+    color: #ffffff;
+  }
+
+  /* Firefox */
+  ::-moz-selection {
+    background-color: rgb(59 130 246);
+    color: #FFFFFF;
+  }
+
+  /* =======================
+     Scrollbar Styles
+     ======================= */
+
   /* Firefox */
   * {
     scrollbar-width: thin;
