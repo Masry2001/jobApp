@@ -167,4 +167,20 @@
       @endif
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const startTime = sessionStorage.getItem('application_submission_start');
+      if (startTime) {
+        const endTime = Date.now();
+        const duration = (endTime - startTime) / 1000;
+
+        console.log('%c Performance Measurement ', 'background: #2563eb; color: #fff; font-weight: bold; padding: 2px 4px; border-radius: 4px;');
+        console.log(`Total Application Time: %c${duration.toFixed(2)} seconds`, 'color: #2563eb; font-weight: bold;');
+
+        // Clear it so it doesn't show again on refresh
+        sessionStorage.removeItem('application_submission_start');
+      }
+    }, { once: true });
+  </script>
 </x-app-layout>

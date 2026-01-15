@@ -28,6 +28,9 @@ export default function resumeUpload() {
             // Set submitting state internally
             this.isSubmitting = true;
 
+            // Mark start time for performance measurement
+            sessionStorage.setItem('application_submission_start', Date.now());
+
             // 2. Disable button and show loading state via DOM (security/separation level)
             const button = document.getElementById('submit-button');
             const spinner = document.getElementById('loading-spinner');

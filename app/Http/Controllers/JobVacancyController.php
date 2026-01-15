@@ -59,6 +59,7 @@ class JobVacancyController extends Controller
         ApplyJobRequest $request,
         JobVacancy $jobVacancy
     ) {
+        $startTime = microtime(true);
         try {
             $resumeId = null;
             $resumeOption = $request->input('resume_option');
@@ -137,6 +138,9 @@ class JobVacancyController extends Controller
                 'aiGeneratedScore' => $evaluation['aiGeneratedScore'],
                 'aiGeneratedFeedback' => $evaluation['aiGeneratedFeedback'],
             ]);
+
+            $duration = round(microtime(true) - $startTime, 2);
+            \Log::info("Job application processed in {$duration}s for user ID: " . auth()->id());
 
             return redirect()
                 ->route('job-applications.index')
