@@ -6,7 +6,7 @@ use App\Http\Controllers\JobApplicationsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobVacancyController;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-use App\Http\Controllers\ResumeController;
+
 
 
 Route::get('/', function () {
@@ -27,7 +27,7 @@ Route::middleware(['auth', 'role:Job-Seeker'])->group(function () {
 
     Route::post('/job-vacancies/{jobVacancy}/apply', [JobVacancyController::class, 'processApplication'])->name('job-vacancies.processApplication');
 
-    // test open Ai 
+    // test open Ai
     Route::get('/testOpenAI', [JobVacancyController::class, 'testOpenAI'])->name('testOpenAI');
 
     // test gemini
@@ -35,19 +35,6 @@ Route::middleware(['auth', 'role:Job-Seeker'])->group(function () {
 
     // list models of gemini
     Route::get('/listModels', [JobVacancyController::class, 'listModels'])->name('listModels');
-
-
-
-
-    Route::get('/upload-resume', function () {
-        return view('resume-upload');
-    });
-    Route::post('/resumes/upload', [ResumeController::class, 'upload']);
-    Route::get('/resumes/download/{filename}', [ResumeController::class, 'download']);
-    Route::delete('/resumes/{filename}', [ResumeController::class, 'delete']);
-    Route::get('/resumes/list', [ResumeController::class, 'list']);
-    Route::get('/resumes/url/{filename}', [ResumeController::class, 'getUrl']);
-
 
 
 
