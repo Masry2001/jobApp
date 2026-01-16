@@ -89,6 +89,9 @@ class JobVacancyController extends Controller
                 $originalFileName = $resumeFile->getClientOriginalName();
                 $filename = Str::uuid() . '_' . time() . '.pdf';
 
+                // Extract resume info locally first to save time
+                $extractedResumeInfo = $this->resumeAnalysisService->extractResumeInformationFromPath($resumeFile->getRealPath());
+
                 // Upload to Supabase (store in Supabase)
                 $path = Storage::disk('supabase')->putFileAs(
                     'resumes',
@@ -98,9 +101,6 @@ class JobVacancyController extends Controller
                 );
 
                 $publicUrl = $this->getSupabasePublicUrl($path);
-
-                // Extract resume info
-                $extractedResumeInfo = $this->resumeAnalysisService->extractResumeInformation($publicUrl);
 
                 // Create new resume entry
                 $resume = Resume::create([
@@ -123,7 +123,7 @@ class JobVacancyController extends Controller
                 // This should never happen due to validation, but just in case
                 return back()
                     ->withInput()
-                    ->withErrors(['resume_option' => 'Invalid resume option selected.']);
+                    ->withErrors(['resume_option' => 'Invalid resume option selected, it is neither existing resume nor new resume.']);
             }
 
             // AI (Gemini API) will evaluate job application using extracted resume info

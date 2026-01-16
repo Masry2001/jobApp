@@ -6,7 +6,6 @@ use Exception;
 use Illuminate\Support\Facades\Storage;
 use Spatie\PdfToText\Pdf;
 use Illuminate\Support\Facades\Log;
-
 use Gemini\Laravel\Facades\Gemini;
 use Gemini\Data\Content;
 use Gemini\Data\GenerationConfig;
@@ -18,23 +17,31 @@ use Gemini\Enums\ResponseMimeType;
 
 class ResumeAnalysisService
 {
-  public function extractResumeInformation(string $fileUrl)
+  public function extractResumeInformation(string $publicUrl)
   {
-    // read the pdf file and get the raw text, we will use a library to do this
-    $rawText = $this->extractTextFromPDF($fileUrl);
+    // read the pdf file and get the raw text, we will use spatie pdf to text
+    $rawText = $this->extractTextFromUrl($publicUrl);
 
     Log::debug('Successfully extracted resume information with ' . strlen($rawText) . ' characters');
 
     // use Gemini api to get the resume information as json
-
     return $this->extractResumeInformationUsingGemini($rawText);
-
   }
 
-  public function analyzeResume($jobVacancy, $resumeData)
+  public function extractResumeInformationFromPath(string $filePath)
+  {
+    $rawText = $this->extractTextFromPath($filePath);
+
+    Log::debug('Successfully extracted resume information from path with ' . strlen($rawText) . ' characters');
+
+    return $this->extractResumeInformationUsingGemini($rawText);
+  }
+
+  // Gemini Call#2
+  public function analyzeResume($jobVacancy, $extractedResumeInfo)
   {
     try {
-      // Encode job vacancy data to json to send to gemini 
+      // Encode job vacancy data to json to send to gemini
       $jobVacancyJson = json_encode([
         'jobTitle' => $jobVacancy->title,
         'description' => $jobVacancy->description,
@@ -44,12 +51,13 @@ class ResumeAnalysisService
       ]);
 
       // Encode resume data to json to send to gemini
-      $resumeDataJson = json_encode($resumeData);
+      $resumeDataJson = json_encode($extractedResumeInfo);
 
       // Send to gemini
+
       $result = Gemini::generativeModel(model: 'gemini-2.5-flash')
         ->withSystemInstruction(
-          Content::parse('You are an expert HR professional and job recruiter. You are given a job vacancy and a resume. Your task is to analyze and determine if the candidate is a good fit for the job. Provide a score from 0 to 100 for the candidate suitability for the job and detailed feedback.')
+          Content::parse('You are an expert HR professional and job recruiter. You are given a job vacancy and a resume. Your task is to analyze and determine if the candidate is a good fit for the job. Provide a score from 0 to 100 for the candidate suitability for the job and detailed feedback. Calculate the score based on the following weights: Skills (20%), Education (20%), Experience (50%), Summary (10%).')
         )
         ->withGenerationConfig(
           generationConfig: new GenerationConfig(
@@ -93,21 +101,16 @@ class ResumeAnalysisService
     }
   }
 
-
-  private function extractTextFromPDF(string $fileUrl)
+//for remote files
+  private function extractTextFromUrl(string $publicUrl)
   {
-    // we will use Spatie to extract the text from the pdf
-
-
-    // read the file from supabase and save it to a temp file (locally)
     $tempFile = tempnam(sys_get_temp_dir(), 'resume');
-    $filePath = parse_url($fileUrl, PHP_URL_PATH);
+    $filePath = parse_url($publicUrl, PHP_URL_PATH);
 
     if (!$filePath) {
       throw new Exception('Invalid file Url');
     }
     $fileName = basename($filePath);
-
     $storagePath = "resumes/$fileName";
 
     if (!Storage::disk('supabase')->exists($storagePath)) {
@@ -121,45 +124,38 @@ class ResumeAnalysisService
 
     file_put_contents($tempFile, $pdfContent);
 
+    try {
+        return $this->extractTextFromPath($tempFile);
+    } finally {
+        unlink($tempFile);
+    }
+  }
 
+    //for local files
+  private function extractTextFromPath(string $filePath)
+  {
+    $this->checkPdfToTextInstalled();
 
-    // check if pdf to text is installed by checking the paths
+    return (new Pdf())
+      ->setPdf($filePath)
+      ->text();
+  }
+
+  private function checkPdfToTextInstalled()
+  {
     $pdfToText = ['/usr/bin/pdftotext', '/opt/homebrew/bin/pdftotext', '/usr/local/bin/pdftotext'];
-    $pdfToTextAvailable = false;
 
     foreach ($pdfToText as $path) {
       if (file_exists($path)) {
-        $pdfToTextAvailable = true;
-        break;
+        return true;
       }
     }
 
-    if (!$pdfToTextAvailable) {
-      throw new Exception('pdftotext is not installed, you can install it from this link: https://github.com/spatie/pdf-to-text');
-    }
-
-
-
-
-
-    // now we can extract the text from the pdf
-
-    $text = (new Pdf())
-      ->setPdf($tempFile)
-      ->text();
-
-    // delete the temp file
-    unlink($tempFile);
-
-    return $text;
-
-
-
+    throw new Exception('pdftotext is not installed, you can install it from this link: https://github.com/spatie/pdf-to-text');
   }
 
 
-
-
+    // Gemini Call#1
   private function extractResumeInformationUsingGemini(string $text)
   {
     try {
@@ -191,14 +187,7 @@ class ResumeAnalysisService
 
       $parsedResult = json_decode($result->text(), true);
 
-      // Validate the required keys
-      $requiredKeys = ['skills', 'education', 'experience', 'summary'];
-      $missingKeys = array_diff($requiredKeys, array_keys($parsedResult ?? []));
-
-      if (count($missingKeys) > 0) {
-        Log::error('Missing keys: ' . implode(', ', $missingKeys));
-        throw new Exception('Missing keys: ' . implode(', ', $missingKeys));
-      }
+      $this->validateResumeKeys($parsedResult);
 
       return [
         'skills' => $parsedResult['skills'],
@@ -218,9 +207,15 @@ class ResumeAnalysisService
     }
   }
 
+  private function validateResumeKeys(array $parsedResult)
+  {
+      $requiredKeys = ['skills', 'education', 'experience', 'summary'];
+      $missingKeys = array_diff($requiredKeys, array_keys($parsedResult ?? []));
 
-
-
-
+      if (count($missingKeys) > 0) {
+        Log::error('Missing keys: ' . implode(', ', $missingKeys));
+        throw new Exception('Missing keys: ' . implode(', ', $missingKeys));
+      }
+  }
 
 }
