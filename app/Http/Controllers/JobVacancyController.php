@@ -12,6 +12,7 @@ use App\Models\Resume;
 use App\Models\JobApplication;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Jobs\AnalyzeJobApplication;
 
 class JobVacancyController extends Controller
 {
@@ -66,7 +67,9 @@ class JobVacancyController extends Controller
             $extractedResumeInfo = null; // Initialize the variable
 
             // Handle based on selected option
+            // ** create a seperate function to handle these conditions**
             if ($resumeOption === 'existing_resume') {
+                // ** create a seperate function to handle this condition**
                 // User selected an existing resume
                 $resumeId = $request->input('existing_resume');
 
@@ -85,14 +88,18 @@ class JobVacancyController extends Controller
 
             } elseif ($resumeOption === 'new_resume') {
                 // User uploaded a new resume
+                // ** create a seperate function to handle this condition**
                 $resumeFile = $request->file('new_resume');
                 $originalFileName = $resumeFile->getClientOriginalName();
                 $filename = Str::uuid() . '_' . time() . '.pdf';
 
                 // Extract resume info locally first to save time
+                // ** move this to queue **
                 $extractedResumeInfo = $this->resumeAnalysisService->extractResumeInformationFromPath($resumeFile->getRealPath());
 
                 // Upload to Supabase (store in Supabase)
+                // ** create a seperate function to upload to supabase **
+                // ** move this to queue **
                 $path = Storage::disk('supabase')->putFileAs(
                     'resumes',
                     $resumeFile,
@@ -126,25 +133,25 @@ class JobVacancyController extends Controller
                     ->withErrors(['resume_option' => 'Invalid resume option selected, it is neither existing resume nor new resume.']);
             }
 
-            // AI (Gemini API) will evaluate job application using extracted resume info
-            $evaluation = $this->resumeAnalysisService->analyzeResume($jobVacancy, $extractedResumeInfo);
-
             // Create job application
-            JobApplication::create([
-                'status' => 'pending',
+            $jobApplication = JobApplication::create([
+                'status' => 'Pending',
                 'jobVacancyId' => $jobVacancy->id,
                 'resumeId' => $resumeId,
                 'userId' => auth()->id(),
-                'aiGeneratedScore' => $evaluation['aiGeneratedScore'],
-                'aiGeneratedFeedback' => $evaluation['aiGeneratedFeedback'],
+                'aiGeneratedScore' => null,
+                'aiGeneratedFeedback' => null,
             ]);
+
+            // Dispatch AI analysis to background queue
+            AnalyzeJobApplication::dispatch($jobApplication, $extractedResumeInfo);
 
             $duration = round(microtime(true) - $startTime, 2);
             \Log::info("Job application processed in {$duration}s for user ID: " . auth()->id());
 
             return redirect()
                 ->route('job-applications.index')
-                ->with('success', 'Application submitted successfully!');
+                ->with('success', 'Application received! AI analysis is processing in the background.');
 
         } catch (\Exception $e) {
             \Log::error('Application submission failed: ' . $e->getMessage());
@@ -188,6 +195,19 @@ class JobVacancyController extends Controller
 
     public function listModels()
     {
+
+        // top 10 modles for out task
+
+        // gemini-2.5-pro
+        // gemini-3-pro-preview
+        // gemini-2.5-flash
+        // gemini-flash-latest
+        // gemini-3-flash-preview
+        // gemini-2.5-flash-lite
+        // gemini-pro-latest
+        // gemma-3-27b-it
+        // gemma-3-12b-it
+        // gemini-2.0-flash
         $response = Gemini::models()->list();
 
         return $response->models;

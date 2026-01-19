@@ -107,25 +107,41 @@
                     </span>
                   </div>
 
-                  <!-- AI Score -->
-                  <div class="p-4 bg-gray-900/50 border border-gray-700 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                      <span class="text-sm text-gray-400">AI Match Score</span>
-                      <span class="text-2xl font-bold text-white">{{ $jobApplication->aiGeneratedScore }}<span
-                          class="text-sm text-gray-400">/100</span></span>
-                    </div>
-                    <div class="w-full bg-gray-700 rounded-full h-2">
-                      @php
-                        $scoreColor = $jobApplication->aiGeneratedScore >= 70 ? 'bg-green-500' : ($jobApplication->aiGeneratedScore >= 40 ? 'bg-yellow-500' : 'bg-red-500');
-                      @endphp
-                      <div class="{{ $scoreColor }} h-2 rounded-full transition-all duration-500"
-                        style="width: {{ $jobApplication->aiGeneratedScore }}%"></div>
-                    </div>
-                  </div>
+                  <!-- AI Score & Feedback -->
+                  @if($jobApplication->aiGeneratedScore === null)
+                      <!-- Analyzing State -->
+                      <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg animate-pulse">
+                          <div class="flex items-center gap-3 text-blue-400">
+                              <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span class="font-semibold">AI is analyzing...</span>
+                          </div>
+                           <p class="text-xs text-blue-300/70 mt-2 ml-8">Check back in ~20s</p>
+                      </div>
+                  @else
+                      <!-- AI Score -->
+                      <div class="p-4 bg-gray-900/50 border border-gray-700 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                          <span class="text-sm text-gray-400">AI Match Score</span>
+                          <span class="text-2xl font-bold text-white">{{ $jobApplication->aiGeneratedScore }}<span
+                              class="text-sm text-gray-400">/100</span></span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                          @php
+                            $scoreColor = $jobApplication->aiGeneratedScore >= 70 ? 'bg-green-500' : ($jobApplication->aiGeneratedScore >= 40 ? 'bg-yellow-500' : 'bg-red-500');
+                          @endphp
+                          <div class="{{ $scoreColor }} h-2 rounded-full transition-all duration-500"
+                            style="width: {{ $jobApplication->aiGeneratedScore }}%"></div>
+                        </div>
+                      </div>
+                  @endif
                 </div>
               </div>
 
               <!-- Bottom Section: AI Feedback (Full Width) -->
+              @if(!($jobApplication->aiGeneratedScore === null))
               <div class="p-5 bg-gray-900/50 border border-gray-700 rounded-lg">
                 <h5 class="text-base font-semibold text-white mb-3 flex items-center gap-2">
                   <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,6 +154,7 @@
                   {{ $jobApplication->aiGeneratedFeedback }}
                 </p>
               </div>
+              @endif
             </div>
           </div>
         @empty
