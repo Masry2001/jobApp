@@ -55,9 +55,9 @@ class ResumeAnalysisService
 
       // Send to gemini
 
-      $result = Gemini::generativeModel(model: 'gemini-2.5-flash')
+      $result = Gemini::generativeModel(model: 'gemini-3-pro-preview')
         ->withSystemInstruction(
-          Content::parse('You are an expert HR professional and job recruiter. You are given a job vacancy and a resume. Your task is to analyze and determine if the candidate is a good fit for the job. Provide a score from 0 to 100 for the candidate suitability for the job and detailed feedback. Calculate the score based on the following weights: Skills (20%), Education (20%), Experience (50%), Summary (10%).')
+          Content::parse('Today is ' . date('Y-m-d') . '. You are an expert HR professional and job recruiter. You are given a job vacancy and a resume. Your task is to analyze and determine if the candidate is a good fit for the job. Provide a score from 0 to 100 for the candidate suitability for the job and detailed feedback. Calculate the score based on the following weights: Skills (20%), Education (20%), Experience (50%), Summary (10%).')
         )
         ->withGenerationConfig(
           generationConfig: new GenerationConfig(
@@ -159,7 +159,7 @@ class ResumeAnalysisService
   private function extractResumeInformationUsingGemini(string $text)
   {
     try {
-      $result = Gemini::generativeModel(model: 'gemini-2.5-flash')
+      $result = Gemini::generativeModel(model: 'gemini-3-pro-preview')
         ->withSystemInstruction(
           Content::parse('You are a precision resume analyzer. Your job is to analyze a resume and extract information exactly as it appears in the resume without adding any additional information.')
         )

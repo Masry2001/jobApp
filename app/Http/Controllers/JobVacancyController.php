@@ -13,6 +13,7 @@ use App\Models\JobApplication;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Jobs\AnalyzeJobApplication;
+use App\Jobs\ExtractResumeText;
 
 class JobVacancyController extends Controller
 {
@@ -88,44 +89,45 @@ class JobVacancyController extends Controller
 
             } elseif ($resumeOption === 'new_resume') {
                 // User uploaded a new resume
-                // ** create a seperate function to handle this condition**
                 $resumeFile = $request->file('new_resume');
                 $originalFileName = $resumeFile->getClientOriginalName();
                 $filename = Str::uuid() . '_' . time() . '.pdf';
 
-                // Extract resume info locally first to save time
-                // ** move this to queue **
-                $extractedResumeInfo = $this->resumeAnalysisService->extractResumeInformationFromPath($resumeFile->getRealPath());
+                // Store file locally for background processing
+                $path = $resumeFile->storeAs('temp', $filename);
+                $absolutePath = Storage::path($path);
 
-                // Upload to Supabase (store in Supabase)
-                // ** create a seperate function to upload to supabase **
-                // ** move this to queue **
-                $path = Storage::disk('supabase')->putFileAs(
-                    'resumes',
-                    $resumeFile,
-                    $filename,
-                    'public'
-                );
-
-                $publicUrl = $this->getSupabasePublicUrl($path);
-
-                // Create new resume entry
+                // Create new resume entry with placeholders
                 $resume = Resume::create([
                     'fileName' => $originalFileName,
-                    'fileUri' => $path,
-                    'publicUrl' => $publicUrl,
+                    'fileUri' => 'processing',
+                    'publicUrl' => 'processing',
                     'userId' => auth()->id(),
                     'contactDetails' => json_encode([
                         'name' => auth()->user()->name,
                         'email' => auth()->user()->email,
                     ]),
-                    'summary' => json_encode($extractedResumeInfo['summary']),
-                    'skills' => json_encode($extractedResumeInfo['skills']),
-                    'experience' => json_encode($extractedResumeInfo['experience']),
-                    'education' => json_encode($extractedResumeInfo['education']),
+                    'summary' => json_encode([]),
+                    'skills' => json_encode([]),
+                    'experience' => json_encode([]),
+                    'education' => json_encode([]),
                 ]);
 
                 $resumeId = $resume->id;
+
+                // Create job application
+                $jobApplication = JobApplication::create([
+                    'status' => 'Pending',
+                    'jobVacancyId' => $jobVacancy->id,
+                    'resumeId' => $resumeId,
+                    'userId' => auth()->id(),
+                    'aiGeneratedScore' => null,
+                    'aiGeneratedFeedback' => null,
+                ]);
+
+                // Dispatch extraction job (which will trigger analysis and upload)
+                ExtractResumeText::dispatch($absolutePath, $resume, $jobApplication);
+
             } else {
                 // This should never happen due to validation, but just in case
                 return back()
@@ -133,18 +135,21 @@ class JobVacancyController extends Controller
                     ->withErrors(['resume_option' => 'Invalid resume option selected, it is neither existing resume nor new resume.']);
             }
 
-            // Create job application
-            $jobApplication = JobApplication::create([
-                'status' => 'Pending',
-                'jobVacancyId' => $jobVacancy->id,
-                'resumeId' => $resumeId,
-                'userId' => auth()->id(),
-                'aiGeneratedScore' => null,
-                'aiGeneratedFeedback' => null,
-            ]);
+            // For existing resumes, we need to create the application and dispatch analysis here
+            if ($resumeOption === 'existing_resume') {
+                 // Create job application
+                $jobApplication = JobApplication::create([
+                    'status' => 'Pending',
+                    'jobVacancyId' => $jobVacancy->id,
+                    'resumeId' => $resumeId,
+                    'userId' => auth()->id(),
+                    'aiGeneratedScore' => null,
+                    'aiGeneratedFeedback' => null,
+                ]);
 
-            // Dispatch AI analysis to background queue
-            AnalyzeJobApplication::dispatch($jobApplication, $extractedResumeInfo);
+                // Dispatch AI analysis directly
+                AnalyzeJobApplication::dispatch($jobApplication, $extractedResumeInfo);
+            }
 
             $duration = round(microtime(true) - $startTime, 2);
             \Log::info("Job application processed in {$duration}s for user ID: " . auth()->id());
